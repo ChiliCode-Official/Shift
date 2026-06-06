@@ -278,7 +278,7 @@
         <header class="navbar glass-panel" style="padding: 12px 20px; margin-bottom: 16px; justify-content: center;">
             <div class="brand">
                 <img src="https://i.imgur.com/NQ2yinY.png" alt="Logo" style="height: 24px;">
-                <span class="brand-name" style="font-size: 1.2rem;">SHIFT TICKET</span>
+                <span class="brand-name" id="ticket-brand-name" style="font-size: 1.2rem;">SHIFT TICKET</span>
             </div>
         </header>
 
@@ -408,6 +408,13 @@
                 <a href="terminos.html" style="color: var(--text-secondary); text-decoration: none; margin: 0 10px;">Términos de Uso</a> | 
                 <a href="privacidad.html" style="color: var(--text-secondary); text-decoration: none; margin: 0 10px;">Aviso de Privacidad</a>
             </div>
+            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 8px; display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <span>Una submarca de</span>
+                <a href="https://chilicode-official.github.io/ChiliCode/" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; text-decoration: none; color: #FFFFFF; font-weight: 700;">
+                    <img src="https://i.imgur.com/h3CpChF.png" alt="Chili Code" style="height: 16px; object-fit: contain;">
+                    <span>Chili Code</span>
+                </a>
+            </div>
         </footer>
 
     </div>
@@ -484,6 +491,22 @@
                             ubicacionUrl = sData.ubicacionUrl || "";
                             telefonoValet = sData.telefono || "";
                             esSotano = sData.esSotano || false;
+
+                            // Dynamic Title & Header
+                            const brandNameText = sData.nombreEstacionamiento || "Shift Ticket";
+                            const brandElement = document.getElementById('ticket-brand-name');
+                            if (brandElement) {
+                                brandElement.textContent = brandNameText.toUpperCase();
+                            }
+                            document.title = `${brandNameText} | Shift Ticket`;
+
+                            // Dynamic CSS Injection
+                            if (sData.colorAcento) {
+                                document.documentElement.style.setProperty('--primary', sData.colorAcento);
+                                // Dynamically calculate a soft glow background alpha for the layout
+                                document.documentElement.style.setProperty('--primary-glow', sData.colorAcento + '59');
+                                document.documentElement.style.setProperty('--primary-bg', sData.colorAcento + '1a');
+                            }
 
                             // Actualizar advertencia de sótano
                             const sotanoCard = document.getElementById('sotano-warning-card');

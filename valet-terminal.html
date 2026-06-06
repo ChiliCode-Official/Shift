@@ -299,6 +299,7 @@
         <header class="navbar glass-panel terminal-header">
             <div class="header-info">
                 <img src="https://i.imgur.com/NQ2yinY.png" alt="Logo" style="height: 28px;">
+                <span id="terminal-brand-name" style="font-family: var(--font-title); font-weight: 800; font-size: 1.1rem; color: #FFFFFF; display: none; margin-right: 4px;"></span>
                 <span class="sucursal-badge" id="sucursal-badge">SUC001</span>
                 <span style="font-size: 0.8rem; color: var(--text-secondary)">[VALET]</span>
             </div>
@@ -451,7 +452,8 @@
             query, 
             where, 
             orderBy, 
-            serverTimestamp 
+            serverTimestamp,
+            getDoc
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Protección de Ruta
@@ -464,6 +466,28 @@
         }
 
         document.getElementById('sucursal-badge').textContent = sucursal;
+
+        // Cargar identidad visual y color de acento
+        const sucursalDocRef = doc(db, 'sucursales', sucursal);
+        getDoc(sucursalDocRef).then((sucSnap) => {
+            if (sucSnap.exists()) {
+                const sData = sucSnap.data();
+                if (sData.nombreEstacionamiento) {
+                    const brandElement = document.getElementById('terminal-brand-name');
+                    if (brandElement) {
+                        brandElement.textContent = sData.nombreEstacionamiento;
+                        brandElement.style.display = 'inline';
+                    }
+                }
+                if (sData.colorAcento) {
+                    document.documentElement.style.setProperty('--primary', sData.colorAcento);
+                    document.documentElement.style.setProperty('--primary-glow', sData.colorAcento + '59');
+                    document.documentElement.style.setProperty('--primary-bg', sData.colorAcento + '1a');
+                }
+            }
+        }).catch((err) => {
+            console.error("Error loading terminal brand settings:", err);
+        });
 
         // Lógica de Asfixia del Plan Piquín: Contar boletos creados en el mes actual
         const startOfMonth = new Date();
