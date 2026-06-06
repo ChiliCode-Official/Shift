@@ -540,6 +540,7 @@
             <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 20px; margin-bottom: 24px;">
                 <span style="font-size: 0.8rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Expediente de Vehículo</span>
                 <h2 style="font-family: var(--font-title); font-size: 2.2rem; color: var(--primary); margin-top: 4px;" id="modal-detail-plate">AAA-123-A</h2>
+                <div style="font-size: 1.1rem; color: var(--text-secondary); font-weight: 600; margin-top: 2px; display: none;" id="modal-detail-brand-model"></div>
                 <div style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 4px;" id="modal-detail-time">Ingreso: 05/06/2026 18:00</div>
             </div>
 
@@ -823,8 +824,16 @@
                     ? (t.notes.length > 50 ? t.notes.substring(0, 50) + '...' : t.notes) 
                     : '<span style="color: rgba(255,255,255,0.25);">Sin notas de daños</span>';
 
+                // Texto de marca y modelo opcionales si existen
+                const brandModelText = (t.brand || t.model)
+                    ? `<span style="display: block; font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; font-weight: 500;">${[t.brand, t.model].filter(Boolean).join(' ')}</span>`
+                    : '';
+
                 tr.innerHTML = `
-                    <td data-label="Vehículo"><span class="plate-badge">${t.plate}</span></td>
+                    <td data-label="Vehículo">
+                        <span class="plate-badge">${t.plate}</span>
+                        ${brandModelText}
+                    </td>
                     <td data-label="Ingreso"><span style="font-size: 0.9rem; color: var(--text-secondary);">${dateStr}</span></td>
                     <td data-label="Estado">${statusBadge}</td>
                     <td data-label="Notas"><span style="font-size: 0.9rem; color: var(--text-secondary);">${noteDisplay}</span></td>
@@ -846,6 +855,16 @@
         // Abrir Modal de Bóveda Legal con Detalles Completos y 5 Fotos
         function openDetailModal(ticket) {
             document.getElementById('modal-detail-plate').textContent = ticket.plate;
+            
+            const brandModelEl = document.getElementById('modal-detail-brand-model');
+            if (brandModelEl) {
+                if (ticket.brand || ticket.model) {
+                    brandModelEl.textContent = [ticket.brand, ticket.model].filter(Boolean).join(' ');
+                    brandModelEl.style.display = 'block';
+                } else {
+                    brandModelEl.style.display = 'none';
+                }
+            }
             
             const dateStr = ticket.createdAt 
                 ? ticket.createdAt.toDate().toLocaleString('es-MX', { dateStyle: 'medium', timeStyle: 'short' }) 

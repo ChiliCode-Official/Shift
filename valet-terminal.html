@@ -277,9 +277,100 @@
             pointer-events: none;
             box-shadow: none;
         }
+
+        /* Estilos para tarjetas urgentes/pagadas en valet terminal (incluso en móvil con override !important) */
+        .ticket-card-urgent {
+            background: rgba(255, 222, 89, 0.05) !important;
+            border: 1.5px solid var(--warning) !important;
+            box-shadow: 0 0 16px var(--warning-glow) !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+            animation: urgent-pulse 2s infinite ease-in-out !important;
+        }
+
+        .ticket-card-paid {
+            background: rgba(0, 200, 150, 0.05) !important;
+            border: 1.5px solid var(--primary) !important;
+            box-shadow: 0 0 16px var(--primary-glow) !important;
+            border-radius: 16px !important;
+            padding: 16px !important;
+            margin-bottom: 12px !important;
+            animation: paid-pulse 2s infinite ease-in-out !important;
+        }
+
+        @keyframes urgent-pulse {
+            0% { box-shadow: 0 0 8px var(--warning-glow); border-color: rgba(255, 222, 89, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(255, 222, 89, 0.65); border-color: var(--warning); }
+            100% { box-shadow: 0 0 8px var(--warning-glow); border-color: rgba(255, 222, 89, 0.5); }
+        }
+
+        @keyframes paid-pulse {
+            0% { box-shadow: 0 0 8px var(--primary-glow); border-color: rgba(0, 200, 150, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(0, 200, 150, 0.65); border-color: var(--primary); }
+            100% { box-shadow: 0 0 8px var(--primary-glow); border-color: rgba(0, 200, 150, 0.5); }
+        }
+
+        /* Highlight animation al presionar toast */
+        .highlight-glow {
+            animation: highlight-pulse 1.5s ease-in-out 2 !important;
+        }
+
+        @keyframes highlight-pulse {
+            0% { background: rgba(255, 255, 255, 0.03); }
+            50% { background: rgba(255, 255, 255, 0.2); box-shadow: 0 0 24px rgba(255, 255, 255, 0.4); }
+            100% { background: rgba(255, 255, 255, 0.03); }
+        }
+
+        /* Toasts visual style */
+        .toast-notification {
+            background: rgba(18, 20, 29, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            animation: toast-slide-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            pointer-events: auto;
+            cursor: pointer;
+            gap: 12px;
+            width: 100%;
+        }
+
+        .toast-urgent {
+            border-color: var(--warning);
+            box-shadow: 0 4px 20px var(--warning-glow);
+        }
+
+        .toast-paid {
+            border-color: var(--primary);
+            box-shadow: 0 4px 20px var(--primary-glow);
+        }
+
+        @keyframes toast-slide-in {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .toast-close {
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+        }
     </style>
 </head>
 <body>
+
+    <!-- Contenedor de Toasts de Alertas -->
+    <div id="toast-container" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 5000; display: flex; flex-direction: column; gap: 10px; width: calc(100% - 32px); max-width: 450px; pointer-events: none;"></div>
 
     <!-- Banner de Advertencia del Plan Piquín (Sticky) -->
     <div id="plan-warning-banner" style="display: none; position: sticky; top: 0; left: 0; right: 0; z-index: 1500; background: var(--warning-bg); border-bottom: 1px solid var(--warning); padding: 12px; text-align: center; color: var(--warning); font-family: var(--font-title); font-weight: 700; box-shadow: 0 4px 12px var(--warning-glow);">
@@ -352,6 +443,17 @@
                             <input type="radio" name="tipo-vehiculo" value="suv" style="accent-color: var(--primary); width: 18px; height: 18px; cursor: pointer;">
                             🚙 SUV / Camioneta
                         </label>
+                    </div>
+                </div>
+
+                <div class="grid-2" style="margin-bottom: 20px; gap: 12px;">
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="brand-input" class="form-label">Marca (Opcional)</label>
+                        <input type="text" id="brand-input" class="form-control" placeholder="E.g. Toyota" autocomplete="off">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label for="model-input" class="form-label">Modelo (Opcional)</label>
+                        <input type="text" id="model-input" class="form-control" placeholder="E.g. Corolla" autocomplete="off">
                     </div>
                 </div>
 
@@ -671,6 +773,8 @@
             e.preventDefault();
 
             const plate = document.getElementById('plate-input').value.trim().toUpperCase();
+            const brand = document.getElementById('brand-input').value.trim();
+            const model = document.getElementById('model-input').value.trim();
             const notes = document.getElementById('notes-input').value.trim();
             const tipoVehiculo = document.querySelector('input[name="tipo-vehiculo"]:checked').value;
 
@@ -688,6 +792,8 @@
                 const ticketData = {
                     sucursalId: sucursal,
                     plate: plate,
+                    brand: brand || null,
+                    model: model || null,
                     notes: notes,
                     tipoVehiculo: tipoVehiculo,
                     status: 'estacionado', // Máquina de estados: estacionado -> solicitado -> pagado -> entregado
@@ -746,11 +852,108 @@
             modalQR.style.display = 'flex';
         }
 
-        // Suscripción en tiempo real a Firestore para autos activos
+        // Tracking objects for live alerts
+        const existingTickets = {};
+        let isFirstLoad = true;
+
+        // Web Audio API double chime synthesizer
+        function playChime() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+                
+                // First note
+                const osc1 = ctx.createOscillator();
+                const gain1 = ctx.createGain();
+                osc1.type = 'sine';
+                osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                gain1.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
+                osc1.connect(gain1);
+                gain1.connect(ctx.destination);
+                osc1.start();
+                osc1.stop(ctx.currentTime + 0.4);
+
+                // Second note (a bit later and higher pitch)
+                const osc2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                osc2.type = 'sine';
+                osc2.frequency.setValueAtTime(880, ctx.currentTime + 0.15); // A5
+                gain2.gain.setValueAtTime(0.1, ctx.currentTime + 0.15);
+                gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.65);
+                osc2.connect(gain2);
+                gain2.connect(ctx.destination);
+                osc2.start(ctx.currentTime + 0.15);
+                osc2.stop(ctx.currentTime + 0.65);
+            } catch (e) {
+                console.error("Error playing audio chime:", e);
+            }
+        }
+
+        // Trigger visual toast and audio sound
+        function triggerUrgentAlert(ticketId, data) {
+            playChime();
+
+            const toastContainer = document.getElementById('toast-container');
+            if (!toastContainer) return;
+
+            const toast = document.createElement('div');
+            const isPaid = data.status === 'pagado';
+            toast.className = `toast-notification ${isPaid ? 'toast-paid' : 'toast-urgent'}`;
+            
+            const titleText = isPaid ? '🚨 ¡AUTO PAGADO!' : '🚨 AUTO SOLICITADO';
+            const subtitleText = `${data.plate} - ${data.brand || ''} ${data.model || ''}`.trim().replace(/\s+/g, ' ');
+            const detailText = isPaid ? 'Pago confirmado. Entregar de inmediato.' : 'Pago en efectivo al recibir.';
+
+            toast.innerHTML = `
+                <div style="flex-grow: 1; text-align: left;">
+                    <div style="font-family: var(--font-title); font-weight: 800; font-size: 0.95rem; color: #FFFFFF; margin-bottom: 2px;">${titleText}</div>
+                    <div style="font-size: 0.85rem; font-weight: 700; color: ${isPaid ? 'var(--primary)' : 'var(--warning)'}; margin-bottom: 2px;">${subtitleText}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-secondary); line-height: 1.2;">${detailText}</div>
+                </div>
+                <button class="toast-close">&times;</button>
+            `;
+
+            // Action: Scroll to and highlight card
+            toast.addEventListener('click', (e) => {
+                if (e.target.classList.contains('toast-close')) return;
+                
+                const card = document.getElementById(`ticket-card-${ticketId}`);
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    card.classList.add('highlight-glow');
+                    setTimeout(() => card.classList.remove('highlight-glow'), 3000);
+                }
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.remove(), 300);
+            });
+
+            // Close button
+            toast.querySelector('.toast-close').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                setTimeout(() => toast.remove(), 300);
+            });
+
+            toastContainer.appendChild(toast);
+
+            // Auto dismiss after 15 seconds
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.style.opacity = '0';
+                    toast.style.transform = 'translateY(-20px)';
+                    setTimeout(() => toast.remove(), 300);
+                }
+            }, 15000);
+        }
+
+        // Suscripción en tiempo real a Firestore para todos los tickets de la sucursal
         const qActiveTickets = query(
             collection(db, "tickets"),
-            where("sucursalId", "==", sucursal),
-            where("status", "!=", "entregado")
+            where("sucursalId", "==", sucursal)
         );
 
         onSnapshot(qActiveTickets, (snapshot) => {
@@ -758,49 +961,96 @@
             const activeCount = document.getElementById('active-count');
             
             ticketsList.innerHTML = '';
-            let count = 0;
+            
+            // Filtrar tickets activos en memoria para evitar errores de índice compuesto
+            const activeDocs = snapshot.docs.filter(doc => doc.data().status !== 'entregado');
+            const count = activeDocs.length;
 
-            if (snapshot.empty) {
+            if (count === 0) {
                 ticketsList.innerHTML = `
                     <div style="text-align: center; padding: 40px 0; color: var(--text-secondary);">
                         Cero vehículos activos en la sucursal.
                     </div>`;
                 activeCount.textContent = '0 autos';
+                isFirstLoad = false;
+                
+                // Limpiar rastreador
+                Object.keys(existingTickets).forEach(key => delete existingTickets[key]);
                 return;
             }
 
-            // Ordenar por fecha localmente debido a las limitaciones de índices compuestos iniciales en Firestore
-            const sortedDocs = snapshot.docs.sort((a, b) => {
-                const dateA = a.data().createdAt?.toDate() || new Date(0);
-                const dateB = b.data().createdAt?.toDate() || new Date(0);
+            // Gestión de alertas de cambio de estado a urgente (pagado o solicitado)
+            activeDocs.forEach(docSnap => {
+                const id = docSnap.id;
+                const data = docSnap.data();
+                const prevData = existingTickets[id];
+
+                if (!isFirstLoad) {
+                    const becameUrgent = (data.status === 'pagado' || data.status === 'solicitado') &&
+                                         (!prevData || prevData.status === 'estacionado');
+                    if (becameUrgent) {
+                        triggerUrgentAlert(id, data);
+                    }
+                }
+                existingTickets[id] = data;
+            });
+
+            // Limpieza del rastreador local para IDs que ya no están activos
+            const currentActiveIds = new Set(activeDocs.map(d => d.id));
+            Object.keys(existingTickets).forEach(id => {
+                if (!currentActiveIds.has(id)) {
+                    delete existingTickets[id];
+                }
+            });
+
+            isFirstLoad = false;
+
+            // Ordenamiento por prioridad en memoria:
+            // Nivel 3: pagado, Nivel 2: solicitado, Nivel 1: estacionado.
+            // Desempate secundario: fecha de actualización o creación descendente (más recientes primero)
+            const getPriority = (data) => {
+                if (data.status === 'pagado') return 3;
+                if (data.status === 'solicitado') return 2;
+                return 1;
+            };
+
+            const sortedDocs = activeDocs.sort((a, b) => {
+                const priorityA = getPriority(a.data());
+                const priorityB = getPriority(b.data());
+                if (priorityA !== priorityB) {
+                    return priorityB - priorityA;
+                }
+                const dateA = a.data().updatedAt?.toDate() || a.data().createdAt?.toDate() || new Date(0);
+                const dateB = b.data().updatedAt?.toDate() || b.data().createdAt?.toDate() || new Date(0);
                 return dateB - dateA;
             });
 
             sortedDocs.forEach(ticketDoc => {
-                count++;
                 const ticketId = ticketDoc.id;
                 const data = ticketDoc.data();
                 
                 const timeString = data.createdAt ? data.createdAt.toDate().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Reciente';
 
                 const card = document.createElement('div');
-                card.className = 'glass-panel ticket-card';
                 card.id = `ticket-card-${ticketId}`;
                 
-                // Determinar badge de estado
+                // Determinar badge de estado y clase correspondiente de CSS
                 let statusBadge = '';
-                let borderGlow = '';
                 if (data.status === 'estacionado') {
+                    card.className = 'glass-panel ticket-card';
                     statusBadge = '<span class="status-badge status-estacionado">Estacionado</span>';
                 } else if (data.status === 'solicitado') {
+                    card.className = 'glass-panel ticket-card ticket-card-urgent';
                     statusBadge = `<span class="status-badge status-solicitado">${data.metodoPago === 'efectivo' ? 'Solicitado - Efectivo' : 'Solicitado'}</span>`;
-                    borderGlow = 'border: 1px solid var(--warning); box-shadow: 0 0 12px var(--warning-glow);';
                 } else if (data.status === 'pagado') {
+                    card.className = 'glass-panel ticket-card ticket-card-paid';
                     statusBadge = '<span class="status-badge status-pagado">Pagado (Entregar)</span>';
-                    borderGlow = 'border: 1px solid var(--primary); box-shadow: 0 0 12px var(--primary-glow);';
                 }
 
-                card.style = borderGlow;
+                // Texto de marca y modelo opcionales si existen
+                const brandModelText = (data.brand || data.model)
+                    ? `<div style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 2px; font-weight: 500;">${[data.brand, data.model].filter(Boolean).join(' ')}</div>`
+                    : '';
 
                 let validationButton = '';
                 if (data.status === 'estacionado') {
@@ -814,6 +1064,7 @@
                 card.innerHTML = `
                     <div class="ticket-info">
                         <div class="ticket-plate">${data.plate}</div>
+                        ${brandModelText}
                         <div style="display: flex; align-items: center; gap: 8px; margin-top: 4px;">
                             ${statusBadge}
                             <span class="ticket-time">Ingreso: ${timeString}</span>

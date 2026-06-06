@@ -289,6 +289,7 @@
                 <div style="text-align: left;">
                     <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Boleto Digital</div>
                     <div class="plate-header" id="plate-display" style="border-bottom: none; margin-bottom: 0; padding-bottom: 0; font-size: 2rem; display: inline; width: auto;">AAA-123-A</div>
+                    <div id="brand-model-display" style="font-size: 1rem; color: var(--text-secondary); font-weight: 600; margin-top: 4px; display: none;"></div>
                 </div>
                 <div id="status-banner" class="vehicle-status-banner" style="margin-bottom: 0; padding: 8px 16px; border-radius: 10px;">
                     Cargando estado...
@@ -478,6 +479,17 @@
 
                 // 1. Mostrar Placas
                 document.getElementById('plate-display').textContent = data.plate;
+
+                // Mostrar Marca y Modelo
+                const brandModelEl = document.getElementById('brand-model-display');
+                if (brandModelEl) {
+                    if (data.brand || data.model) {
+                        brandModelEl.textContent = [data.brand, data.model].filter(Boolean).join(' ');
+                        brandModelEl.style.display = 'block';
+                    } else {
+                        brandModelEl.style.display = 'none';
+                    }
+                }
 
                 // 2. Fetch de Configuración de Sucursal
                 if (data.sucursalId && sucursalFetched !== data.sucursalId) {
