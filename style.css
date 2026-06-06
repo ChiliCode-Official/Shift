@@ -142,6 +142,8 @@ p {
     text-decoration: none;
     touch-action: manipulation;
     user-select: none;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .btn:active {
@@ -247,6 +249,8 @@ p {
     font-size: 16px; /* Prevents auto-zoom on iOS Safari */
     transition: var(--transition-smooth);
     min-height: 48px;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .form-control:focus {
