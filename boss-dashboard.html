@@ -476,6 +476,60 @@
             </div>
         </section>
 
+        <!-- Gestión de Personal (Valets) -->
+        <section class="glass-panel" style="padding: 28px; margin-top: 32px; margin-bottom: 32px;">
+            <div style="margin-bottom: 24px;">
+                <h2 style="font-family: var(--font-title); margin-bottom: 4px;">👥 Gestión de Personal (Valets)</h2>
+                <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                    Registra y administra los accesos para los trabajadores (valets) de esta sucursal.
+                </p>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr; gap: 32px;">
+                <!-- Formulario Agregar Empleado -->
+                <div style="background: rgba(255, 255, 255, 0.01); border: 1px solid var(--border-color); padding: 20px; border-radius: 16px;">
+                    <h3 style="font-family: var(--font-title); font-size: 1.15rem; margin-bottom: 16px; color: #FFFFFF;">Agregar Nuevo Valet</h3>
+                    <form id="add-valet-form" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="valet-name-input" class="form-label">Nombre del Trabajador</label>
+                            <input type="text" id="valet-name-input" class="form-control" placeholder="Ej. Juan Pérez" required autocomplete="off">
+                        </div>
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="valet-pin-input" class="form-label">PIN de Acceso (4-6 dígitos)</label>
+                            <input type="password" id="valet-pin-input" class="form-control" placeholder="••••" maxlength="6" inputmode="numeric" pattern="[0-9]{4,6}" required>
+                        </div>
+                        <div style="grid-column: span 2; text-align: right; margin-top: 10px;">
+                            <button type="submit" id="btn-add-valet" class="btn btn-primary" style="padding: 10px 24px; font-size: 0.85rem; min-height: 40px;">Registrar Valet</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Tabla de Personal -->
+                <div>
+                    <h3 style="font-family: var(--font-title); font-size: 1.15rem; margin-bottom: 16px; color: #FFFFFF;">Trabajadores Activos</h3>
+                    <div class="table-responsive">
+                        <table class="vault-table" style="width: 100%; border-collapse: collapse; text-align: left;">
+                            <thead>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <th style="padding: 12px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Nombre</th>
+                                    <th style="padding: 12px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">Rol</th>
+                                    <th style="padding: 12px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase;">PIN (Accesos)</th>
+                                    <th style="padding: 12px; color: var(--text-secondary); font-size: 0.8rem; text-transform: uppercase; text-align: right;">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="valets-table-body">
+                                <tr>
+                                    <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">
+                                        Cargando personal de la sucursal...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
     </div>
 
     <!-- MODAL DETALLES AUTO (BÓVEDA LEGAL) -->
@@ -515,7 +569,11 @@
             where,
             doc,
             getDoc,
-            setDoc
+            setDoc,
+            addDoc,
+            deleteDoc,
+            getDocs,
+            serverTimestamp
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         // Protección de Ruta
@@ -827,6 +885,127 @@
 
             modalDetalle.style.display = 'flex';
         }
+
+        // --- GESTIÓN DE PERSONAL (VALETS) EN TIEMPO REAL ---
+
+        // Listar y escuchar en tiempo real a los trabajadores (valets)
+        const valetsTableBody = document.getElementById('valets-table-body');
+        const qValets = query(
+            collection(db, "usuarios"),
+            where("sucursalId", "==", sucursal)
+        );
+
+        onSnapshot(qValets, (snapshot) => {
+            valetsTableBody.innerHTML = '';
+            
+            if (snapshot.empty) {
+                valetsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="4" style="text-align: center; color: var(--text-secondary); padding: 20px 0;">
+                            No hay trabajadores registrados para esta sucursal.
+                        </td>
+                    </tr>`;
+                return;
+            }
+
+            snapshot.forEach((userDoc) => {
+                const uData = userDoc.data();
+                const uId = userDoc.id;
+                
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid var(--border-color)';
+                
+                const isBoss = uData.rol === 'boss';
+                const roleBadge = isBoss 
+                    ? '<span class="status-badge status-pagado" style="font-size: 0.7rem; padding: 2px 8px;">Boss (Admin)</span>' 
+                    : '<span class="status-badge status-estacionado" style="font-size: 0.7rem; padding: 2px 8px;">Valet</span>';
+                
+                // Botón de eliminar (deshabilitado para el administrador)
+                const deleteAction = isBoss 
+                    ? `<span style="font-size: 0.8rem; color: var(--text-secondary); font-style: italic;">Administrador</span>` 
+                    : `<button class="btn btn-secondary btn-delete-valet" data-id="${uId}" style="padding: 6px 12px; font-size: 0.75rem; min-height: 28px; border-color: var(--danger); color: var(--danger);">Eliminar</button>`;
+
+                row.innerHTML = `
+                    <td style="padding: 12px; font-weight: 600; color: #FFFFFF;">${uData.nombre || 'Sin nombre'}</td>
+                    <td style="padding: 12px;">${roleBadge}</td>
+                    <td style="padding: 12px; font-family: monospace; font-size: 0.95rem;">${uData.pin}</td>
+                    <td style="padding: 12px; text-align: right;">${deleteAction}</td>
+                `;
+                valetsTableBody.appendChild(row);
+            });
+
+            // Registrar listeners para botones de eliminar
+            document.querySelectorAll('.btn-delete-valet').forEach(btn => {
+                btn.onclick = async (e) => {
+                    const docId = e.target.getAttribute('data-id');
+                    if (confirm("¿Estás seguro de que deseas eliminar este trabajador del valet? Perderá el acceso de inmediato.")) {
+                        try {
+                            const spinner = document.getElementById('loading-spinner');
+                            spinner.style.display = 'flex';
+                            
+                            await deleteDoc(doc(db, "usuarios", docId));
+                            
+                            alert("Trabajador eliminado exitosamente.");
+                        } catch (err) {
+                            console.error("Error al eliminar trabajador:", err);
+                            alert("Error al eliminar el trabajador.");
+                        } finally {
+                            document.getElementById('loading-spinner').style.display = 'none';
+                        }
+                    }
+                };
+            });
+        });
+
+        // Registro de Nuevo Valet
+        document.getElementById('add-valet-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('valet-name-input').value.trim();
+            const pin = document.getElementById('valet-pin-input').value.trim();
+            
+            if (pin.length < 4 || isNaN(pin)) {
+                alert("El PIN debe tener entre 4 y 6 dígitos numéricos.");
+                return;
+            }
+
+            const spinner = document.getElementById('loading-spinner');
+            spinner.style.display = 'flex';
+
+            try {
+                // Verificar si ya existe un usuario con este PIN en esta sucursal
+                const qCheck = query(
+                    collection(db, "usuarios"),
+                    where("sucursalId", "==", sucursal),
+                    where("pin", "==", pin)
+                );
+                const checkSnap = await getDocs(qCheck);
+                
+                if (!checkSnap.empty) {
+                    alert("Este PIN ya está asignado a otro usuario de tu sucursal. Elige uno diferente.");
+                    spinner.style.display = 'none';
+                    return;
+                }
+
+                // Crear el nuevo usuario valet
+                await addDoc(collection(db, "usuarios"), {
+                    sucursalId: sucursal,
+                    nombre: name,
+                    pin: pin,
+                    rol: 'valet',
+                    activo: true,
+                    createdAt: serverTimestamp()
+                });
+
+                document.getElementById('add-valet-form').reset();
+                alert("Trabajador registrado exitosamente.");
+            } catch (err) {
+                console.error("Error al registrar valet:", err);
+                alert("Ocurrió un error al registrar al valet.");
+            } finally {
+                spinner.style.display = 'none';
+            }
+        });
     </script>
 </body>
 </html>
