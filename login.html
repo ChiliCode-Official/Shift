@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acceso Terminal | Shift</title>
+    
+    <!-- Favicon / PWA Icon -->
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kLlDof4.png">
+    
+    <!-- Hojas de estilo -->
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .login-card {
+            width: 100%;
+            max-width: 420px;
+            padding: 40px 32px;
+            text-align: center;
+            animation: card-reveal 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @media (max-width: 360px) {
+            .login-card {
+                padding: 24px 16px;
+            }
+            .login-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        @keyframes card-reveal {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+                box-shadow: 0 0 0 0 rgba(0, 0, 0, 0);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .login-logo {
+            height: 60px;
+            margin-bottom: 24px;
+            object-fit: contain;
+        }
+
+        .login-title {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #FFFFFF 40%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .login-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 32px;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 12px;
+            text-align: left;
+            display: none;
+            padding: 8px 12px;
+            background: rgba(255, 94, 94, 0.1);
+            border: 1px solid rgba(255, 94, 94, 0.2);
+            border-radius: 8px;
+        }
+
+        .demo-credentials {
+            margin-top: 24px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            font-size: 0.8rem;
+            text-align: left;
+            color: var(--text-secondary);
+        }
+
+        .demo-title {
+            color: var(--primary);
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-family: var(--font-title);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .demo-item {
+            margin-bottom: 4px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .demo-item span {
+            color: var(--text-primary);
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel login-card">
+        <img src="https://i.imgur.com/NQ2yinY.png" alt="Shift Logo" class="login-logo">
+        <h1 class="login-title">Acceso Terminal</h1>
+        <p class="login-subtitle">Introduce las credenciales de tu sucursal</p>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="sucursal-id" class="form-label">ID de Sucursal</label>
+                <input type="text" id="sucursal-id" class="form-control" placeholder="Ej. SUC001" required autocomplete="off">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 24px;">
+                <label for="sucursal-pin" class="form-label">PIN de Acceso</label>
+                <input type="password" id="sucursal-pin" class="form-control" placeholder="••••" maxlength="6" inputmode="numeric" pattern="[0-9]*" required>
+            </div>
+
+            <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%;">
+                Verificar Credenciales
+            </button>
+            
+            <div id="error-box" class="error-message"></div>
+        </form>
+
+    </div>
+
+    <script type="module">
+        import { db } from "./firebase-config.js";
+        import { collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const sucursalId = document.getElementById('sucursal-id').value.trim();
+            const pin = document.getElementById('sucursal-pin').value.trim();
+            const errorBox = document.getElementById('error-box');
+            const submitBtn = document.getElementById('btn-login-submit');
+            
+            errorBox.style.display = 'none';
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Verificando...';
+
+            try {
+                const q = query(
+                    collection(db, "usuarios"), 
+                    where("sucursalId", "==", sucursalId), 
+                    where("pin", "==", pin)
+                );
+                
+                const querySnapshot = await getDocs(q);
+                
+                if (querySnapshot.empty) {
+                    throw new Error("ID de sucursal o PIN incorrectos.");
+                }
+                
+                const userDoc = querySnapshot.docs[0];
+                const userData = userDoc.data();
+                
+                if (userData.activo !== true) {
+                    throw new Error("Acceso denegado. Usuario inactivo.");
+                }
+                
+                // Save session
+                localStorage.setItem('shift_sucursal', userData.sucursalId);
+                localStorage.setItem('shift_role', userData.rol);
+                localStorage.setItem('shift_session', 'active');
+                
+                // Redirect based on role
+                if (userData.rol === 'boss') {
+                    window.location.href = 'boss-dashboard.html';
+                } else {
+                    window.location.href = 'valet-terminal.html';
+                }
+            } catch (error) {
+                errorBox.textContent = error.message;
+                errorBox.style.display = 'block';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verificar Credenciales';
+            }
+        });
+    </script>
+</body>
+</html>

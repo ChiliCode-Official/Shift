@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registro Prueba Gratis | Shift</title>
+    
+    <!-- Favicon / PWA Icon -->
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kLlDof4.png">
+    
+    <!-- Hojas de estilo -->
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .register-card {
+            width: 100%;
+            max-width: 440px;
+            padding: 40px 32px;
+            text-align: center;
+            animation: card-reveal 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes card-reveal {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .register-logo {
+            height: 50px;
+            margin-bottom: 20px;
+            object-fit: contain;
+        }
+
+        .register-title {
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, #FFFFFF 40%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .register-subtitle {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            margin-bottom: 28px;
+        }
+
+        .error-message {
+            color: var(--danger);
+            font-size: 0.85rem;
+            margin-top: 16px;
+            text-align: left;
+            display: none;
+            padding: 8px 12px;
+            background: rgba(255, 94, 94, 0.1);
+            border: 1px solid rgba(255, 94, 94, 0.2);
+            border-radius: 8px;
+        }
+
+        .success-message {
+            color: var(--primary);
+            font-size: 0.85rem;
+            margin-top: 16px;
+            text-align: left;
+            display: none;
+            padding: 8px 12px;
+            background: rgba(0, 200, 150, 0.1);
+            border: 1px solid rgba(0, 200, 150, 0.2);
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="glass-panel register-card">
+        <img src="https://i.imgur.com/NQ2yinY.png" alt="Shift Logo" class="register-logo">
+        <h1 class="register-title">Prueba Gratis (Piquín)</h1>
+        <p class="register-subtitle">Registra tu sucursal en segundos verificando tu celular</p>
+
+        <!-- Contenedor invisible para reCAPTCHA de Firebase -->
+        <div id="recaptcha-container"></div>
+
+        <!-- PASO 1: Ingreso de Teléfono -->
+        <div id="step-phone">
+            <form id="phone-form">
+                <div class="form-group" style="text-align: left;">
+                    <label for="phone-input" class="form-label">Número Celular (Formato Internacional)</label>
+                    <input type="tel" id="phone-input" class="form-control" placeholder="+525512345678" required autocomplete="off">
+                    <span style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: block;">
+                        Debe incluir el código de país (ej. +52 para México seguido de tus 10 dígitos sin espacios).
+                    </span>
+                </div>
+
+                <button type="submit" id="btn-send-otp" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+                    Recibir Código SMS
+                </button>
+            </form>
+        </div>
+
+        <!-- PASO 2: Ingreso de OTP (Oculto inicialmente) -->
+        <div id="step-otp" style="display: none;">
+            <form id="otp-form">
+                <div class="form-group" style="text-align: left;">
+                    <label for="otp-input" class="form-label">Código de Verificación SMS</label>
+                    <input type="text" id="otp-input" class="form-control" placeholder="123456" maxlength="6" inputmode="numeric" pattern="[0-9]*" required>
+                    <span id="phone-sent-label" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 4px; display: block;">
+                        Enviamos un código de 6 dígitos al número.
+                    </span>
+                </div>
+
+                <button type="submit" id="btn-verify-otp" class="btn btn-primary" style="width: 100%; margin-top: 16px;">
+                    Validar y Crear Sucursal
+                </button>
+            </form>
+        </div>
+
+        <div id="error-box" class="error-message"></div>
+        <div id="success-box" class="success-message"></div>
+    </div>
+
+    <!-- Firebase SDK & Script de Registro -->
+    <script type="module">
+        import { db } from "./firebase-config.js";
+        import { 
+            getAuth, 
+            RecaptchaVerifier, 
+            signInWithPhoneNumber 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+        import { 
+            doc, 
+            getDoc, 
+            setDoc, 
+            collection, 
+            addDoc,
+            serverTimestamp 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        // Inicializar Firebase Auth
+        const auth = getAuth();
+        let confirmationResult = null;
+        let phoneNumber = "";
+
+        const errorBox = document.getElementById("error-box");
+        const successBox = document.getElementById("success-box");
+
+        function showError(msg) {
+            successBox.style.display = "none";
+            errorBox.textContent = msg;
+            errorBox.style.display = "block";
+        }
+
+        function showSuccess(msg) {
+            errorBox.style.display = "none";
+            successBox.textContent = msg;
+            successBox.style.display = "block";
+        }
+
+        // Configurar reCAPTCHA invisible de Firebase
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+            'size': 'invisible',
+            'callback': (response) => {
+                // reCAPTCHA resuelto - se permite el envío de SMS
+            },
+            'expired-callback': () => {
+                showError("El reCAPTCHA expiró. Por favor intenta de nuevo.");
+            }
+        });
+
+        // Paso 1: Enviar SMS
+        document.getElementById("phone-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errorBox.style.display = "none";
+            successBox.style.display = "none";
+
+            const rawPhone = document.getElementById("phone-input").value.trim();
+            
+            // Validar formato básico (+ y números)
+            if (!/^\+\d{10,15}$/.test(rawPhone)) {
+                showError("Formato de teléfono no válido. Asegúrate de iniciar con + y código de país (ej. +525512345678).");
+                return;
+            }
+
+            phoneNumber = rawPhone;
+            const sendBtn = document.getElementById("btn-send-otp");
+            sendBtn.disabled = true;
+            sendBtn.textContent = "Enviando SMS...";
+
+            try {
+                const appVerifier = window.recaptchaVerifier;
+                confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+                
+                showSuccess("Código enviado. Por favor revisa tu bandeja de SMS.");
+                
+                // Mostrar Paso 2 y ocultar Paso 1
+                document.getElementById("step-phone").style.display = "none";
+                document.getElementById("step-otp").style.display = "block";
+                document.getElementById("phone-sent-label").textContent = `Enviamos un código de 6 dígitos a ${phoneNumber}`;
+            } catch (error) {
+                console.error("SMS sending error:", error);
+                showError("Error al enviar SMS. Revisa tu número o la conexión.");
+                sendBtn.disabled = false;
+                sendBtn.textContent = "Recibir Código SMS";
+            }
+        });
+
+        // Paso 2: Verificar OTP y Crear en Firestore
+        document.getElementById("otp-form").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            errorBox.style.display = "none";
+            successBox.style.display = "none";
+
+            const otp = document.getElementById("otp-input").value.trim();
+            if (otp.length !== 6 || isNaN(otp)) {
+                showError("El código OTP debe ser de 6 dígitos numéricos.");
+                return;
+            }
+
+            const verifyBtn = document.getElementById("btn-verify-otp");
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = "Validando código...";
+
+            try {
+                // Confirmar código OTP
+                const result = await confirmationResult.confirm(otp);
+                const user = result.user;
+                
+                // Formatear el ID de sucursal (ej. SUC-+525574123521 -> quitamos el + para simplificar el ID: SUC-525574123521)
+                const cleanPhoneNum = phoneNumber.replace("+", "");
+                const sucursalId = `SUC-${cleanPhoneNum}`;
+
+                showSuccess("Teléfono verificado con éxito. Inicializando tu base de datos...");
+
+                // 1. Verificar si la sucursal ya existe
+                const sucursalDocRef = doc(db, "sucursales", sucursalId);
+                const sucursalSnap = await getDoc(sucursalDocRef);
+
+                if (sucursalSnap.exists()) {
+                    showError("Esta sucursal ya se encuentra registrada. Redirigiendo al login...");
+                    setTimeout(() => {
+                        window.location.href = "login.html";
+                    }, 2500);
+                    return;
+                }
+
+                // 2. Crear documento de sucursal
+                await setDoc(sucursalDocRef, {
+                    plan: 'piquin',
+                    createdAt: serverTimestamp(),
+                    esSotano: false,
+                    tarifaHora: 0, // Plan Piquín gratis
+                    telefono: phoneNumber
+                });
+
+                // 3. Crear documento de usuario 'boss' asociado
+                const usersCollectionRef = collection(db, "usuarios");
+                await addDoc(usersCollectionRef, {
+                    sucursalId: sucursalId,
+                    rol: 'boss',
+                    pin: '1234',
+                    activo: true,
+                    phone: phoneNumber,
+                    createdAt: serverTimestamp()
+                });
+
+                // Notificar al usuario y redirigir
+                alert(`¡Sucursal creada exitosamente!\n\nTu ID de Sucursal es: ${sucursalId}\nTu PIN de Administrador (Boss) es: 1234\n\nPor favor inicia sesión con estas credenciales y cambia tu PIN en el panel de configuración.`);
+                window.location.href = "login.html";
+
+            } catch (error) {
+                console.error("Verification error:", error);
+                showError("Código OTP incorrecto o expirado. Por favor inténtalo nuevamente.");
+                verifyBtn.disabled = false;
+                verifyBtn.textContent = "Validar y Crear Sucursal";
+            }
+        });
+    </script>
+</body>
+</html>

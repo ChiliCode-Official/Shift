@@ -1,0 +1,17 @@
+{
+  "name": "Shift Valet Parking",
+  "short_name": "Shift",
+  "description": "Valet Parking Inteligente y Bóveda Legal por Chili Code",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#12141D",
+  "theme_color": "#00C896",
+  "icons": [
+    {
+      "src": "https://i.imgur.com/kLlDof4.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aviso de Privacidad | Shift</title>
+    
+    <!-- Favicon / PWA Icon -->
+    <link rel="icon" type="image/png" href="https://i.imgur.com/kLlDof4.png">
+    
+    <!-- Hojas de estilo -->
+    <link rel="stylesheet" href="style.css">
+    
+    <style>
+        .legal-card {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 48px 40px;
+            animation: fade-in 0.5s ease-out;
+        }
+
+        @media (max-width: 600px) {
+            .legal-card {
+                padding: 24px 16px;
+                margin: 20px auto;
+            }
+            .legal-title {
+                font-size: 1.8rem;
+                margin-bottom: 16px;
+            }
+        }
+
+        .legal-title {
+            font-size: 2.5rem;
+            margin-bottom: 24px;
+            background: linear-gradient(135deg, #FFFFFF 40%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-family: var(--font-title);
+        }
+
+        .legal-content {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.8;
+            text-align: justify;
+        }
+
+        .legal-content h2 {
+            color: #FFFFFF;
+            font-size: 1.3rem;
+            margin-top: 32px;
+            margin-bottom: 12px;
+            font-family: var(--font-title);
+        }
+
+        .legal-content p {
+            margin-bottom: 16px;
+        }
+
+        .legal-content ul {
+            margin-left: 20px;
+            margin-bottom: 16px;
+            list-style-type: square;
+        }
+
+        .legal-content li {
+            margin-bottom: 8px;
+        }
+
+        .highlight-box {
+            background: rgba(0, 200, 150, 0.05);
+            border-left: 3px solid var(--primary);
+            padding: 16px;
+            border-radius: 0 12px 12px 0;
+            margin: 24px 0;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Header -->
+        <header class="navbar glass-panel">
+            <div class="brand">
+                <a href="index.html" style="display: flex; align-items: center; gap: 12px; text-decoration: none;">
+                    <img src="https://i.imgur.com/NQ2yinY.png" alt="Logo" class="brand-logo">
+                    <span class="brand-name">SHIFT</span>
+                </a>
+            </div>
+            <a href="index.html" class="btn btn-secondary" style="padding: 8px 16px;">Volver</a>
+        </header>
+
+        <!-- Documento Legal -->
+        <div class="glass-panel legal-card">
+            <h1 class="legal-title">Aviso de Privacidad</h1>
+            <div class="legal-content">
+                <p><strong>Última actualización:</strong> 5 de junio de 2026</p>
+                <p>En cumplimiento con la <strong>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP)</strong> de México, <strong>Chili Code</strong>, como desarrollador y proveedor de la plataforma de software <strong>Shift</strong>, pone a su disposición el presente Aviso de Privacidad.</p>
+                
+                <div class="highlight-box">
+                    <p><strong>Declaración Clave:</strong> Chili Code recopila fotografías del vehículo y sus placas exclusivamente para motivos de seguridad, auditoría y prevención de fraudes del establecimiento (Valet Parking). Los datos no se venden ni se usarán bajo ninguna circunstancia para fines de marketing.</p>
+                </div>
+
+                <h2>1. Responsable del Tratamiento de Datos</h2>
+                <p>El establecimiento comercial u operador de Valet Parking que contrata la infraestructura de Shift es el <strong>Responsable</strong> directo del tratamiento de sus datos personales. <strong>Chili Code</strong> actúa únicamente como <strong>Encargado</strong> en términos de la LFPDPPP, proveyendo la base de datos y la plataforma en la nube para el procesamiento de la información.</p>
+
+                <h2>2. Datos Personales que Recopilamos</h2>
+                <p>Para la correcta prestación del servicio de control digital de estacionamiento, se recopilarán los siguientes datos a través de la terminal de Valet:</p>
+                <ul>
+                    <li>Número de placa del vehículo.</li>
+                    <li>Fotografías de inspección externa del vehículo (Frente, Atrás, Lateral Izquierda, Lateral Derecha, Techo).</li>
+                    <li>Notas sobre el estado físico visible del automóvil al momento del ingreso.</li>
+                    <li>Marca, modelo y color (opcional / asociativo).</li>
+                </ul>
+
+                <h2>3. Finalidad del Tratamiento de Datos</h2>
+                <p>Los datos recopilados tienen las siguientes finalidades de carácter estrictamente operacional:</p>
+                <ul>
+                    <li>Emitir un boleto digital único escaneable mediante código QR.</li>
+                    <li>Construir una <strong>Bóveda Legal</strong> de inspección para acreditar las condiciones físicas de entrega del automóvil y prevenir reclamos fraudulentos por daños preexistentes.</li>
+                    <li>Verificar el estado del pago del boleto digital (procesado de forma segura vía Stripe).</li>
+                    <li>Permitir al dueño del establecimiento auditar el flujo de caja e ingresos del día de manera interna.</li>
+                </ul>
+
+                <h2>4. Transferencia y Uso de Datos</h2>
+                <p>Chili Code garantiza la confidencialidad de la información. <strong>Ningún dato personal recopilado por Shift es vendido, alquilado o transferido a terceros para campañas de marketing o publicidad.</strong> Las transferencias se limitan estrictamente a:</p>
+                <ul>
+                    <li>La pasarela de pagos Stripe para procesar los cargos digitales de tarifa del valet solicitados por el cliente.</li>
+                    <li>Autoridades competentes en caso de que sea requerido por mandato judicial o para la investigación de siniestros dentro de las instalaciones.</li>
+                </ul>
+
+                <h2>5. Derechos ARCO</h2>
+                <p>Usted tiene derecho al Acceso, Rectificación, Cancelación y Oposición (Derechos ARCO) de sus datos personales. Para ejercer estos derechos, deberá contactar directamente a la administración del establecimiento responsable del servicio de Valet Parking donde se emitió el boleto, o enviar un correo de soporte a la administración proveedora.</p>
+            </div>
+        </div>
+        
+        <!-- Footer -->
+        <footer style="margin-top: 40px; padding: 24px 0; text-align: center; border-top: 1px solid var(--border-color);">
+            <p>© 2026 Shift por Chili Code. Todos los derechos reservados.</p>
+        </footer>
+    </div>
+
+</body>
+</html>
